@@ -1,0 +1,271 @@
+﻿@model List<ServiceTowerWeb.Models.Mantenimiento>
+@{
+    Layout = null;
+    var listaSegura = Model ?? new List<ServiceTowerWeb.Models.Mantenimiento>();
+    var ordenBusqueda = ViewData["Orden"] ?? "General";
+
+    // SOLUCIÓN DEFINITIVA: Convertimos a Base64 para que el logo siempre sea visible
+    string logoBase64 = "";
+    string rootPath = ViewData["RootPath"]?.ToString() ?? "";
+    string logoPhysicalPath = System.IO.Path.Combine(rootPath, "wwwroot", "images", "logo_irasa.png");
+
+    if (System.IO.File.Exists(logoPhysicalPath))
+    {
+        byte[] imageArray = System.IO.File.ReadAllBytes(logoPhysicalPath);
+        logoBase64 = Convert.ToBase64String(imageArray);
+    }
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <title>Reporte Field Service IRASA</title>
+    <style>
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            color: #1e293b;
+            margin: 0;
+            padding: 10px;
+            background-color: #ffffff;
+        }
+
+        .header {
+            border-bottom: 4px solid #0056b3;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+
+        .logo {
+            width: 180px;
+            float: left;
+        }
+
+        .info-reporte {
+            float: right;
+            text-align: right;
+        }
+
+        .title-brand {
+            color: #0056b3;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .subtitle-brand {
+            margin: 2px 0;
+            font-size: 11px;
+            color: #64748b;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .clear {
+            clear: both;
+        }
+
+        .card-equipo {
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 15px;
+            page-break-inside: avoid;
+        }
+
+        .grid-equipo {
+            display: table;
+            width: 100%;
+        }
+
+        .col {
+            display: table-cell;
+            vertical-align: top;
+        }
+
+        .col-info {
+            width: 35%;
+            border-right: 1px solid #e2e8f0;
+            padding-right: 12px;
+        }
+
+        .col-diag {
+            width: 40%;
+            padding: 0 12px;
+            border-right: 1px solid #e2e8f0;
+        }
+
+        .col-fotos {
+            width: 25%;
+            text-align: center;
+            padding-left: 10px;
+        }
+
+        .label-card {
+            font-weight: 800;
+            font-size: 9px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            margin-bottom: 1px;
+        }
+
+        .value-card {
+            font-size: 11px;
+            color: #1e293b;
+            margin-bottom: 8px;
+            font-weight: 500;
+            line-height: 1.2;
+        }
+
+        .foto-link-btn {
+            display: block;
+            padding: 6px 2px;
+            margin-bottom: 6px;
+            background-color: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            color: #0056b3;
+            text-decoration: none;
+            font-size: 9px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 9px;
+            font-weight: bold;
+            margin-top: 8px;
+            text-transform: uppercase;
+        }
+
+        .ok {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .req {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .footer-pdf {
+            text-align: center;
+            font-size: 8px;
+            color: #94a3b8;
+            margin-top: 30px;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+    @if (!string.IsNullOrEmpty(logoBase64))
+    {
+        <img src="data:image/png;base64,@logoBase64" class="logo" />
+    }
+    else
+    {
+        <div class="logo"><b style="color:#0056b3">IRASA</b></div>
+    }
+
+    <div class="info-reporte">
+        <p class="title-brand">FieldService</p>
+        <p class="subtitle-brand">Reporte Field Service IRASA</p>
+        @* Muestra el ID de la orden de búsqueda en el encabezado *@
+        <p style="margin:0; font-size: 13px; color: #d32f2f;"><b>ORDEN DE SERVICIO:</b> #@ordenBusqueda</p>
+        <p style="margin:0; font-size: 11px;"><b>Generado:</b> @DateTime.Now.ToString("dd/MM/yyyy HH:mm")</p>
+    </div>
+    <div class="clear"></div>
+</div>
+
+  @if (listaSegura.Any())
+{
+    foreach (var item in listaSegura)
+    {
+        var comentariosUpper = item.Comentarios?.ToUpper() ?? "";
+        var ok = comentariosUpper.Contains("OK") || comentariosUpper.Contains("NUEVA");
+
+        <div class="card-equipo">
+            <div class="grid-equipo">
+                <div class="col col-info">
+                    <div class="label-card">Cliente</div>
+                    <div class="value-card" style="color: #0056b3; font-weight: bold;">@item.Cliente</div>
+
+                    <div class="label-card">Técnico</div>
+                    <div class="value-card">@item.Tecnico</div>
+
+                    @* CORRECCIÓN AQUÍ: Se añade el MODELO explícitamente *@
+                    <div class="label-card">Datos del Equipo</div>
+                    <div class="value-card">
+                        <span style="color: #d32f2f; font-weight: bold;">ID: #@item.IdEquipo</span><br />
+                        <b>Modelo:</b> @(string.IsNullOrEmpty(item.Modelo) ? "N/A" : item.Modelo)<br />
+                        S/N: @item.Serie @(!string.IsNullOrEmpty(item.Resolucion) ? $" | {item.Resolucion}" : "")
+                    </div>
+
+                    <div class="label-card">Área / Ubicación</div>
+                    <div class="value-card">@item.Area (@item.Ubicacion)</div>
+                </div>
+
+                    <div class="col col-diag">
+                        <div class="label-card">Diagnóstico y Notas</div>
+                        <div class="value-card" style="font-size: 10px; min-height: 40px;">@item.Comentarios</div>
+
+                        <div style="font-size: 9px; color: #64748b; background: #f8fafc; padding: 6px; border-radius: 4px; border: 1px solid #f1f5f9; margin-bottom: 8px;">
+                            <b>Consumibles Zebra:</b><br />
+                            Etiquetas: @(item.UsoEtiqueta ?? "N/A") | Ribbon: @(item.UsoRibbon ?? "N/A")
+                        </div>
+
+                        @* Badge con color dinámico basado en la lógica anterior *@
+                        <span class="status-badge @(ok ? "ok" : "req")">
+                            @(ok ? "OPERATIVO" : "REQUIERE ATENCIÓN")
+                        </span>
+                    </div>
+
+                    <div class="col col-fotos">
+                        <div class="label-card" style="margin-bottom: 8px;">Evidencias</div>
+
+                        @if (!string.IsNullOrEmpty(item.FotoAntesUrl))
+                        {
+                            <a href="@item.FotoAntesUrl" class="foto-link-btn">📷 FOTO ANTES</a>
+                        }
+                        else
+                        {
+                            <div style="font-size: 8px; color: #cbd5e1; margin-bottom: 10px;">Sin foto antes</div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(item.FotoDespuesUrl))
+                        {
+                            <a href="@item.FotoDespuesUrl" class="foto-link-btn">📸 FOTO DESPUÉS</a>
+                        }
+                        else
+                        {
+                            <div style="font-size: 8px; color: #cbd5e1;">Sin foto después</div>
+                        }
+
+                        <div style="font-size: 7px; color: #94a3b8; margin-top: 15px; font-style: italic; line-height: 1;">
+                            Haga clic en los botones para abrir la evidencia en alta resolución.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div style="text-align:center; padding: 50px;">
+            <h3 style="color: #64748b;">No hay datos para esta orden de servicio.</h3>
+        </div>
+    }
+
+    <div class="footer-pdf">
+        Reporte generado vía FieldService Web para IRASA México. <br />
+        &copy; @DateTime.Now.Year - Soporte Técnico Digital.
+    </div>
+
+</body>
+</html>
