@@ -1,39 +1,41 @@
 ﻿# --- ETAPA 1: CONSTRUCCIÓN ---
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-WORKDIR /app
+WORKDIR /src
 
-# Copiamos los archivos y publicamos la app
-COPY . ./
-RUN dotnet publish -c Release -o out
+# Copiamos primero el archivo de proyecto para optimizar caché
+COPY ["ServiceTowerWeb.csproj", "./"]
+RUN dotnet restore
 
-# --- ETAPA 2: EJECUCIÓN (LINUX) ---
+# Copiamos todo lo demás y publicamos
+COPY . .
+RUN dotnet publish -c Release -o /app/out
+
+# --- ETAPA 2: EJECUCIÓN ---
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 
-# 1. Instalamos las librerías gráficas Y el motor wkhtmltopdf de Linux
+# Instalamos dependencias necesarias para PDF en Linux
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    wkhtmltopdf \
     libgdiplus \
     libx11-6 \
-    libc6-dev \
     libxrender1 \
     libxext6 \
     libfontconfig1 \
     libfreetype6 \
-    libssl-dev \
-    libpng16-16 \
-    libjpeg62-turbo \
-    zlib1g \
-    fontconfig \
-    xfonts-75dpi \
-    xfonts-base \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Copiamos los archivos publicados desde la etapa de build
+# Copiamos la app publicada
 COPY --from=build /app/out .
 
-# 3. Permisos de ejecución (por si acaso)
-RUN chmod +x /usr/bin/wkhtmltopdf
+# --- SOLUCIÓN AL ERROR DE PERMISOS ---
+USER root
 
-# 4. Arrancamos la aplicación
+# 1. Creamos la carpeta por si no existe y movemos el binario si es necesario
+# 2. Damos permisos totales de ejecución a la carpeta de Rotativa
+RUN chmod -R 755 /app/wwwroot/Rotativa && \
+    chmod +x /app/wwwroot/Rotativa/Linux/wkhtmltopdf
+
+# Volvemos al usuario de la app por seguridad
+USER $APP_UID
+
 ENTRYPOINT ["dotnet", "ServiceTowerWeb.dll"]
