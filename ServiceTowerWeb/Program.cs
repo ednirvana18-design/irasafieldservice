@@ -71,7 +71,7 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Mantenimientos}/{action=Index}/{id?}");
 
-app.MapGet("/api/ping", () => Results.Text("OK"))
+app.MapGet("/api/ping", () => Results.Content("OK", "text/plain"))
    .AllowAnonymous();
 
 app.Run();
