@@ -14,7 +14,7 @@ RUN dotnet publish -c Release -o /app/out
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 
-# Instalamos dependencias necesarias para PDF en Linux
+# Agregamos libgssapi-krb5-2 a la lista de dependencias
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgdiplus \
     libx11-6 \
@@ -22,6 +22,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxext6 \
     libfontconfig1 \
     libfreetype6 \
+    libgssapi-krb5-2 \
+    icu-devtools \
     && rm -rf /var/lib/apt/lists/*
 
 # Copiamos la app publicada
